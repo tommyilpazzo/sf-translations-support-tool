@@ -16,6 +16,6 @@
 Following is summarized the folder structure expected by the script.
 
 > * _input_
->   * _destination_ (contains bilingual zip file exported from source org)
+>   * _destination_ (contains bilingual zip file exported from destination org)
 >   * _source_ (contains bilingual zip file exported from source org)
 > * _output_ (where result files are written)
