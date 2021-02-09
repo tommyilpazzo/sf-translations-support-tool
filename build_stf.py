@@ -47,7 +47,6 @@ for language_code in source_files:
         source_file_dict = {}
         result_file_keys = []
         source_file = open(source_files[language_code], "r", encoding='UTF8')
-        destination_file = open(destination_files[language_code], "r", encoding='UTF8')
         result_file = open("output/result_" + language_code + "_" + datetime_string + ".stf", "w", encoding='UTF8', newline='')
 
         # Iterate over source file lines
@@ -55,49 +54,66 @@ for language_code in source_files:
             # Check if translated line
             if translated_pattern.match(line):
                 source_file_dict[line.split("\t")[0]] = line.split("\t")[2]
-            # Check if untraslated line
-            elif untranslated_pattern.match(line):
-                source_file_dict[line.split("\t")[0]] = line.rstrip().split("\t")[1]
+
         # Close source file
         source_file.close()
 
         # Build result stf file header
         result_file.write("Language code: " + language_code + "\n")
         result_file.write("Type: Bilingual\n")
+        result_file.write("Translation type: Metadata\n")
         result_file.write("\n")
-        result_file.write("------------------UNTRANSLATED-----------------\n")
+
+        destination_file = open(destination_files[language_code], "r", encoding='UTF8')
+
         result_file.write("\n")
-        result_file.write("# KEY	LABEL\n")
+        result_file.write("------------------TRANSLATED-------------------\n")
+        result_file.write("\n")
+        result_file.write("# KEY	LABEL	TRANSLATION	OUT OF DATE\n")
         result_file.write("\n")
 
         # Iterate over dest file lines
         for line in destination_file:
-            # Check if translated line
-            if translated_pattern.match(line):
-                key = line.split("\t")[0]
-                if key not in result_file_keys :
-                    if key in source_file_dict :
-                        result_file.write(key + "\t" + source_file_dict[key] + "\n")
-                    else:
-                        result_file.write(key + "\t" + line.split("\t")[2] + "\n")
-                        #print("Missing key in source file " + key)
-                    result_file_keys.append(key)
-                else :
-                    print("Duplicated key " + key)
-            # Check if untraslated line
-            elif untranslated_pattern.match(line):
+            # Check if translated or untraslated line
+            if translated_pattern.match(line) or untranslated_pattern.match(line):
                 key = line.split("\t")[0]
                 if key not in result_file_keys:
-                    if key in source_file_dict :
-                        result_file.write(key + "\t" + source_file_dict[key] + "\n")
-                    else :
-                        result_file.write(key + "\t" + line.rstrip().split("\t")[1] + "\n")
-                        #print("Missing key in source file " + key)
-                    result_file_keys.append(key)
+                    if key in source_file_dict:
+                        result_file.write(key + "\t" + line.rstrip().split("\t")[1] + "\t" + source_file_dict[key] + "\t-\n")
+                        result_file_keys.append(key)
                 else:
                     print("Duplicated key " + key)
+
+        result_file.write("\n")
+
         # Close destination file
         destination_file.close()
+
+        destination_file = open(destination_files[language_code], "r", encoding='UTF8')
+
+        result_file.write("\n")
+        result_file.write("------------------OUTDATED AND UNTRANSLATED-----------------\n")
+        result_file.write("\n")
+        result_file.write("# KEY	LABEL\n")
+
+        # Iterate over dest file lines
+        for line in destination_file:
+            # Check if translated or untraslated line
+            if translated_pattern.match(line) or untranslated_pattern.match(line):
+                key = line.split("\t")[0]
+                if key not in result_file_keys:
+                    if key not in source_file_dict:
+                        result_file.write(
+                            key + "\t" + line.rstrip().split("\t")[1] + "\n")
+                        result_file_keys.append(key)
+                elif key not in source_file_dict:
+                    print("Duplicated key " + key)
+
+        result_file.write("\n")
+
+        # Close destination file
+        destination_file.close()
+
         # Close result file
         result_file.close()
 
